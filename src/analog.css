@@ -21,11 +21,32 @@
 .analog-card a {
   color: #e1d2ab;
 }
+.earth-site-similarity {
+  color: #e1d2ab !important;
+  font-size: 12px;
+  font-weight: 600;
+}
 .earth-sites {
   position: absolute;
   z-index: 4;
   inset: 0;
   pointer-events: none;
+}
+.earth-site-connector {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.earth-site-connector line {
+  stroke: #f1dfaa;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 5;
+  opacity: 0.9;
+  vector-effect: non-scaling-stroke;
 }
 .exploration.planet .ex-copy,
 .exploration.planet .ex-readout,
@@ -43,6 +64,7 @@
 }
 .earth-site-marker {
   position: absolute;
+  z-index: 4;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -67,6 +89,12 @@
   background: #15252b;
   color: #fff;
 }
+.exploration.planet.site-details-open .earth-site-marker[aria-pressed="true"] {
+  border-color: #f1dfaa;
+  background: #25332b;
+  box-shadow: 0 0 0 4px #f1dfaa44, 0 3px 20px #000b;
+  color: #fff;
+}
 .earth-site-marker i {
   position: relative;
   width: 12px;
@@ -83,11 +111,40 @@
   background: #d6e5d7;
   content: "";
 }
+.earth-site-focus-pin {
+  position: absolute;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #07131b;
+  border-radius: 50%;
+  background: #f1dfaa;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 6px #f1dfaa66, 0 0 22px #000b;
+  pointer-events: none;
+}
+.earth-site-focus-pin::after {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: #07131b;
+  content: "";
+}
 .earth-site-popover {
   position: absolute;
   z-index: 3;
+  box-sizing: border-box;
   width: min(320px, calc(100vw - 32px));
   max-height: min(420px, calc(100dvh - 150px));
+  cursor: grab;
+}
+.earth-site-popover:active {
+  cursor: grabbing;
+}
+.earth-site-popover button {
+  cursor: pointer;
+}
+.earth-site-popover {
   overflow: auto;
   padding: 14px;
   border: 1px solid #b9d1d166;
@@ -112,6 +169,8 @@
   background: #07131b;
 }
 .earth-site-preview-image canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -144,7 +203,7 @@
   position: absolute;
   top: 20px;
   right: 20px;
-  z-index: 1;
+  z-index: 2;
   width: 34px;
   height: 34px;
   border: 1px solid #d5e0dc66;
@@ -180,6 +239,15 @@
   max-height: 74dvh;
   padding: 64px 28px 28px;
 }
+@media (min-width: 761px) {
+  .exploration.planet.site-details-open .ex-detail {
+    top: 12%;
+    right: auto;
+    left: 5%;
+    width: min(520px, calc(100vw - 48px));
+    max-height: 78dvh;
+  }
+}
 .earth-site-back {
   position: absolute;
   top: 12px;
@@ -210,22 +278,27 @@
   width: 100%;
   height: 100%;
 }
-.earth-site-terrain-pin {
+.earth-site-terrain-pin,
+.earth-site-preview-pin {
   position: absolute;
+  z-index: 1;
   top: 50%;
   left: 50%;
-  width: 20px;
-  height: 20px;
-  border: 1.5px solid #f1dfaa;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #07131b;
   border-radius: 50%;
+  background: #f1dfaa;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 5px #07131b99, 0 0 18px #f1dfaa99;
+  box-shadow: 0 0 0 6px #f1dfaa66, 0 0 22px #000b;
+  pointer-events: none;
 }
-.earth-site-terrain-pin::after {
+.earth-site-terrain-pin::after,
+.earth-site-preview-pin::after {
   position: absolute;
   inset: 6px;
   border-radius: 50%;
-  background: #f1dfaa;
+  background: #07131b;
   content: "";
 }
 .earth-site-terrain-caption {

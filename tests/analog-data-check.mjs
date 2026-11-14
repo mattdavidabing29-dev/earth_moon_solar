@@ -51,6 +51,13 @@ assert.deepEqual(
     "Mojave Desert",
   ],
 );
+for (const [name, rate] of [
+  ["Lanzarote", "56–60%"],
+  ["Craters of the Moon", "52–54%"],
+  ["Sudbury Basin", "41–45%"],
+]) {
+  assert.equal(EARTH_ANALOG_SITES.find((site) => site.name === name)?.similarityRate, rate);
+}
 for (const site of EARTH_ANALOG_SITES) {
   assert.ok(site.latitude >= -90 && site.latitude <= 90, site.name);
   assert.ok(site.longitude >= -180 && site.longitude <= 180, site.name);

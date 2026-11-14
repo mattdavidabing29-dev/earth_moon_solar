@@ -66,11 +66,12 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
  const axisY=new THREE.Vector3(0,1,0),axisX=new THREE.Vector3(1,0,0),focusRotationSpeed=2*Math.PI/24;
  function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}resize();addEventListener('resize',resize);
  function leaveHome(){onInteract?.();}
- canvas.addEventListener('pointerdown',e=>{if(driver)return;if(e.button!==0)return;leaveHome();rotation=false;flight=null;canvas.setPointerCapture(e.pointerId);down={x:e.clientX,y:e.clientY};canvas.classList.add('dragging');});
- canvas.addEventListener('pointermove',e=>{if(driver)return;pointer={x:e.clientX/innerWidth-.5,y:e.clientY/innerHeight-.5};if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;const qy=new THREE.Quaternion().setFromAxisAngle(axisY,dx*.0045),qx=new THREE.Quaternion().setFromAxisAngle(axisX,dy*.0045);targetQ.premultiply(qy).premultiply(qx);down={x:e.clientX,y:e.clientY};});
- const end=()=>{down=null;canvas.classList.remove('dragging');};canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
-
- let pinch=null;canvas.addEventListener('touchstart',e=>{if(driver)return;if(e.touches.length===2){pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);down=null;}},{passive:true});canvas.addEventListener('touchmove',e=>{if(driver)return;if(e.touches.length===2&&pinch){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(orbital)orbitalDistance=THREE.MathUtils.clamp(orbitalDistance*pinch/d,3.6,80);else targetZoom=THREE.MathUtils.clamp(targetZoom+(d-pinch)*.003,0,1);pinch=d;down=null;}},{passive:true});canvas.addEventListener('touchend',()=>pinch=null);
+ canvas.addEventListener('pointerdown',e=>{if(driver||terrainDetailEnabled)return;if(e.button!==0)return;leaveHome();rotation=false;flight=null;canvas.setPointerCapture(e.pointerId);down={x:e.clientX,y:e.clientY};canvas.classList.add('dragging');});
+ canvas.addEventListener('pointermove',e=>{if(driver||terrainDetailEnabled)return;pointer={x:e.clientX/innerWidth-.5,y:e.clientY/innerHeight-.5};if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;const qy=new THREE.Quaternion().setFromAxisAngle(axisY,dx*.0045),qx=new THREE.Quaternion().setFromAxisAngle(axisX,dy*.0045);targetQ.premultiply(qy).premultiply(qx);down={x:e.clientX,y:e.clientY};});
+  const end=()=>{down=null;canvas.classList.remove('dragging');};canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
+  canvas.addEventListener('wheel',e=>{if(driver)return;e.preventDefault();leaveHome();flight=null;if(orbital)orbitalDistance=THREE.MathUtils.clamp(orbitalDistance*Math.exp(e.deltaY*.001),3.6,80);else targetZoom=THREE.MathUtils.clamp(targetZoom+e.deltaY*.001,0,1);},{passive:false});
+ 
+  let pinch=null;canvas.addEventListener('touchstart',e=>{if(driver)return;if(e.touches.length===2){pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);down=null;}},{passive:true});canvas.addEventListener('touchmove',e=>{if(driver)return;if(e.touches.length===2&&pinch){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(orbital)orbitalDistance=THREE.MathUtils.clamp(orbitalDistance*pinch/d,3.6,80);else targetZoom=THREE.MathUtils.clamp(targetZoom+(d-pinch)*.003,0,1);pinch=d;down=null;}},{passive:true});canvas.addEventListener('touchend',()=>pinch=null);
  let driver=null,arrivalStart=null,arrivalTarget=null;
  const clock=new THREE.Clock();const temp=new THREE.Vector3(),world=new THREE.Vector3(),inverse=new THREE.Quaternion();
  function animate(t){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);if(document.hidden)return;frame++;
@@ -131,6 +132,7 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
   setFocusRotation(lat,lon){focusRotationAxis=geographic(lat,lon,1).normalize();rotation=true;},
   clearFocusRotation(){focusRotationAxis=null;},
   setTerrainDetail(on){
+   if(on){pointer={x:0,y:0};camera.position.x=0;camera.position.y=0;down=null;canvas.classList.remove('dragging');}
    if(terrainDetailEnabled===on)return;
    terrainDetailEnabled=on;
    globe.geometry.dispose();
@@ -145,9 +147,7 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
   setOrbitFocus(on){orbitalFocused=on;},
   trackOrbit(lat,lon){rotation=false;flight=null;targetQ.copy(orientation(lat,lon));},
   frameOrbit(distance){orbitalDistance=THREE.MathUtils.clamp(distance,3.6,80);},
-  attachLayer(factory){attachedLayer=factory({scene,group,camera,renderer,radius:R,globe,geographic});return attachedLayer;},
-  setCityLights(on){citiesUniform.value=on?1:0;},
-  explore(){},
+     attachLayer(factory) { attachedLayer = factory({ scene, group, camera, renderer, radius: R, geographic, globe }); return attachedLayer; },  explore(){},  
   home(){home=true;targetZoom=0;rotation=true;flight=null;targetQ.copy(orientation(17,77));targetSun.fromArray(daylight).normalize();},
   flyTo(lat,lon,close=.50,duration=3400){home=false;rotation=false;const maxClose=innerWidth<760?.90:.95;flight={from:group.quaternion.clone(),to:orientation(lat,lon),fromZoom:zoom,zoom:Math.min(close,maxClose),start:performance.now(),duration:reduced?200:duration};},
   zoom(delta){leaveHome();flight=null;if(orbital){orbitalDistance=THREE.MathUtils.clamp(orbitalDistance*Math.exp(-delta*3),3.6,80);return;}targetZoom=THREE.MathUtils.clamp(targetZoom+delta,0,1);},

@@ -118,6 +118,7 @@ try {
     const sitePreview = page.locator(".earth-site-popover");
     await sitePreview.waitFor({ state: "visible" });
     assert.ok((await sitePreview.innerText()).includes(selectedSite));
+    assert.ok(await sitePreview.locator(".earth-site-preview-pin").isVisible());
     await page.waitForFunction(() => {
       const map = document.querySelector(".earth-site-preview-image canvas");
       if (!map) return false;
@@ -126,17 +127,24 @@ try {
         .getImageData(map.width / 2, map.height / 2, 1, 1).data;
       return pixel[0] !== 7 || pixel[1] !== 19 || pixel[2] !== 27;
     });
-    await sitePreview.getByRole("button", { name: "Full site details" }).click();
+    const previewBounds = await sitePreview.boundingBox();
+    assert.ok(
+      previewBounds.x >= 0 && previewBounds.x + previewBounds.width <= viewport.width,
+      "site preview remains within the viewport",
+    );
+    assert.equal(
+      await page.locator('.earth-site-marker[aria-pressed="true"]').count(),
+      1,
+      "the selected globe pin remains identified while its preview is open",
+    );
+    await sitePreview
+      .getByRole("button", { name: "Full site details" })
+      .evaluate((button) => button.click());
     await page.locator(".ex-detail").waitFor({ state: "visible" });
-    const focusedPin = page.locator('.earth-site-marker[aria-pressed="true"]');
-    await focusedPin.waitFor({ state: "visible" });
-    if (viewport.width >= 760) {
-      const focusedPinBounds = await focusedPin.boundingBox();
-      assert.ok(
-        focusedPinBounds.x > viewport.width * 0.25,
-        "focused globe stays visible instead of shifting too far left",
-      );
-    }
+    assert.ok(
+      await page.locator(".earth-site-terrain-pin").isVisible(),
+      "full site illustration shows its location pin",
+    );
     await page.waitForFunction(() => {
       const map = document.querySelector(".earth-site-terrain canvas");
       if (!map) return false;
