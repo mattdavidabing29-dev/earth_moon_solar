@@ -254,8 +254,12 @@ try {
             : MOON_POSITION.clone().add(
                 new THREE.Vector3(0, 0, (mobileDistance * distance) / 10.8),
               );
+<<<<<<< HEAD
             const endAim =
 
+=======
+        const endAim =
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
           mobileDistance === null
             ? MOON_POSITION.clone().add(
                 new THREE.Vector3(

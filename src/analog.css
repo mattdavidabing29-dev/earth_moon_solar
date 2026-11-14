@@ -83,6 +83,7 @@
   background: #d6e5d7;
   content: "";
 }
+<<<<<<< HEAD
 .earth-site-popover {
   position: absolute;
   z-index: 3;
@@ -166,6 +167,8 @@
   font-size: 11px;
   cursor: pointer;
 }
+=======
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
 .exploration .ex-detail {
   width: min(340px, calc(100vw - 32px));
   max-height: 58dvh;
@@ -300,11 +303,14 @@
   cursor: pointer;
 }
 @media (max-width: 760px) {
+<<<<<<< HEAD
   .earth-site-popover {
     width: min(300px, calc(100vw - 32px));
     max-height: min(360px, calc(100dvh - 190px));
     padding: 11px;
   }
+=======
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
   .exploration .ex-detail {
     width: 100%;
     max-height: none;

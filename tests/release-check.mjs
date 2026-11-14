@@ -115,6 +115,7 @@ try {
       marker.click();
       return marker.innerText;
     });
+<<<<<<< HEAD
     const sitePreview = page.locator(".earth-site-popover");
     await sitePreview.waitFor({ state: "visible" });
     assert.ok((await sitePreview.innerText()).includes(selectedSite));
@@ -127,6 +128,8 @@ try {
       return pixel[0] !== 7 || pixel[1] !== 19 || pixel[2] !== 27;
     });
     await sitePreview.getByRole("button", { name: "Full site details" }).click();
+=======
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
     await page.locator(".ex-detail").waitFor({ state: "visible" });
     const focusedPin = page.locator('.earth-site-marker[aria-pressed="true"]');
     await focusedPin.waitFor({ state: "visible" });

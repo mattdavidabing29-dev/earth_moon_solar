@@ -50,6 +50,7 @@ const terrainImage = new Image();
 let terrainImageState = "loading";
 let selectedTerrainCanvas = null;
 let selectedTerrainSite = null;
+<<<<<<< HEAD
 let selectedPreviewCanvas = null;
 let selectedSiteName = null;
 function showTerrainError() {
@@ -63,6 +64,13 @@ function showTerrainError() {
       "The surface image is unavailable.";
     selectedPreviewCanvas = null;
   }
+=======
+function showTerrainError() {
+  if (!selectedTerrainCanvas) return;
+  selectedTerrainCanvas.parentElement.textContent =
+    "The 2D surface view is unavailable.";
+  selectedTerrainCanvas = null;
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
 }
 function drawTerrainMap(canvas, site) {
   const context = canvas.getContext("2d");
@@ -118,8 +126,11 @@ terrainImage.onload = () => {
   terrainImageState = "ready";
   if (selectedTerrainCanvas && selectedTerrainSite)
     drawTerrainMap(selectedTerrainCanvas, selectedTerrainSite);
+<<<<<<< HEAD
   if (selectedPreviewCanvas && selectedTerrainSite)
     drawTerrainMap(selectedPreviewCanvas, selectedTerrainSite);
+=======
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
 };
 terrainImage.onerror = (error) => {
   terrainImageState = "error";
@@ -137,11 +148,15 @@ function showSite(site) {
   back.onclick = () => {
     detail.hidden = true;
     selectedTerrainCanvas = null;
+<<<<<<< HEAD
     selectedPreviewCanvas = null;
     selectedTerrainSite = null;
     selectedSiteName = null;
     sitePreviewOpen = false;
     sitePopover.hidden = true;
+=======
+    selectedTerrainSite = null;
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
     $(".world-shell").classList.remove("site-location-open");
     siteMarkers.forEach(({ button }) =>
       button.setAttribute("aria-pressed", "false"),
@@ -208,7 +223,11 @@ function showSite(site) {
     section.append(subheading, paragraph);
     detail.append(section);
   }
+<<<<<<< HEAD
   detail.hidden = true;
+=======
+  detail.hidden = false;
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
   siteMarkers.forEach(({ site: markerSite, button }) =>
     button.setAttribute(
       "aria-pressed",
@@ -217,8 +236,11 @@ function showSite(site) {
   );
 }
 const siteMarkers = [];
+<<<<<<< HEAD
 let sitePopover;
 let sitePreviewOpen = false;
+=======
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
 scene.attachLayer(({ group, camera, geographic, radius, globe }) => {
   const overlay = document.createElement("div");
   overlay.className = "earth-sites";
@@ -239,6 +261,7 @@ scene.attachLayer(({ group, camera, geographic, radius, globe }) => {
     button.append(icon, label);
     button.onclick = () => {
       showSite(site);
+<<<<<<< HEAD
       selectedSiteName = site.name;
       sitePreviewOpen = true;
       selectedPreviewCanvas = null;
@@ -284,17 +307,24 @@ scene.attachLayer(({ group, camera, geographic, radius, globe }) => {
       if (terrainImageState === "ready") drawTerrainMap(previewCanvas, site);
       if (terrainImageState === "error") showTerrainError();
       sitePopover.hidden = false;
+=======
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
       $(".world-shell").classList.add("site-location-open");
       scene.setCompositionOffsetX(-1.2);
       scene.setTerrainDetail(true);
       scene.setClouds(false);
       scene.flyTo(site.latitude, site.longitude, 0.84, 1800);
       scene.setFocusRotation(site.latitude, site.longitude);
+<<<<<<< HEAD
       spin(false);
+=======
+      spin(true);
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
     };
     overlay.append(button);
     const position = geographic(site.latitude, site.longitude, 2.57);
     const worldPosition = position.clone();
+<<<<<<< HEAD
     return { button, position, worldPosition, site };
   });
   sitePopover = document.createElement("aside");
@@ -302,6 +332,10 @@ scene.attachLayer(({ group, camera, geographic, radius, globe }) => {
   sitePopover.hidden = true;
   sitePopover.setAttribute("aria-live", "polite");
   overlay.append(sitePopover);
+=======
+    return { button, position, worldPosition };
+  });
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
   siteMarkers.push(...markers.map((marker, index) => ({
     ...marker,
     site: EARTH_ANALOG_SITES[index],
@@ -348,6 +382,7 @@ scene.attachLayer(({ group, camera, geographic, radius, globe }) => {
           marker.button.style.top = `${(-projected.y * 0.5 + 0.5) * 100}%`;
         }
       }
+<<<<<<< HEAD
       const selectedMarker = markers.find(
         (marker) => marker.site.name === selectedSiteName,
       );
@@ -380,6 +415,8 @@ scene.attachLayer(({ group, camera, geographic, radius, globe }) => {
       );
       sitePopover.style.left = `${left}px`;
       sitePopover.style.top = `${top}px`;
+=======
+>>>>>>> be0be442f66d1fa1d8feade8e4f463f8f352a9b4
     },
   };
 });
