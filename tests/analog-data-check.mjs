@@ -40,27 +40,28 @@ assert.equal(EARTH_ANALOG_SITES.length, 9);
 assert.deepEqual(
   EARTH_ANALOG_SITES.map(({ name }) => name),
   [
-    "Craters of the Moon",
-    "Lanzarote",
-    "Sudbury Basin",
-    "Atacama Desert",
-    "McMurdo Dry Valleys",
-    "Devon Island",
-    "Mauna Kea and Mauna Loa",
-    "Rio Tinto",
-    "Mojave Desert",
+    "Craters of the Moon, United States",
+    "Lanzarote, Spain",
+    "Sudbury Basin, Canada",
+    "Atacama Desert, Chile",
+    "McMurdo Dry Valleys, Antarctica",
+    "Devon Island, Canada",
+    "Mauna Kea and Mauna Loa, United States",
+    "Rio Tinto, Spain",
+    "Mojave Desert, United States",
   ],
 );
 for (const [name, rate] of [
-  ["Lanzarote", "56–60%"],
-  ["Craters of the Moon", "52–54%"],
-  ["Sudbury Basin", "41–45%"],
+  ["Lanzarote, Spain", "56–60%"],
+  ["Craters of the Moon, United States", "52–54%"],
+  ["Sudbury Basin, Canada", "41–45%"],
 ]) {
   assert.equal(EARTH_ANALOG_SITES.find((site) => site.name === name)?.similarityRate, rate);
 }
 for (const site of EARTH_ANALOG_SITES) {
   assert.ok(site.latitude >= -90 && site.latitude <= 90, site.name);
   assert.ok(site.longitude >= -180 && site.longitude <= 180, site.name);
+  assert.ok(site.targetCoordinates.length > 0, `${site.name}: targetCoordinates`);
   for (const field of ["region", "target", "factors", "works", "limits", "sources"])
     assert.ok(site[field].length > 0, `${site.name}: ${field}`);
 }

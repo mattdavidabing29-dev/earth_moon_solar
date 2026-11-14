@@ -47,7 +47,9 @@ The production website is written to `dist/`. Serve that folder at the root of a
 
 ### Deploy on Render
 
-This repository includes a `render.yaml` Blueprint for a Render Static Site. In Render, create a new Blueprint instance and connect this repository; Render will run `npm ci && npm run build` and publish `dist/`. No environment variables or server-side runtime are required.
+This repository includes a `render.yaml` Blueprint for a Render Static Site. In Render, create a new Blueprint instance and connect this repository; Render will run `npm ci && npm run build` and publish `dist/` through its CDN. No start command or server-side runtime is required.
+
+Choose **Static Site**, not **Web Service**, if setting it up manually: build command `npm ci && npm run build`, publish directory `dist`. A Web Service configured with `npm run dev` is not a production deployment: Vite binds to `127.0.0.1`, which Render's public port scanner cannot reach. That causes repeated “No open ports detected” scans and a deploy timeout even though the build succeeded. The build log's `npm audit` notice is unrelated to that timeout.
 
 ## What the visualization represents
 

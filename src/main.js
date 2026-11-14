@@ -238,6 +238,7 @@ function showSite(site) {
     // FIX 5: show the richer fields (student, scientist, key facts, ...) when present.
     const sections = [
         ["Planetary target", site.target],
+        ["Target coordinates", site.targetCoordinates],
         ["Why it is an analog", site.factors],
         ["Student view", site.student],
         ["Scientist view", site.scientist],

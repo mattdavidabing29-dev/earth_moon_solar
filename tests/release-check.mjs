@@ -161,6 +161,10 @@ try {
       (await page.locator(".ex-detail").innerText()).includes(selectedSite),
       "selected site details open with the 2D terrain view",
     );
+    assert.ok(
+      await page.locator(".ex-detail h3").filter({ hasText: "Target coordinates" }).isVisible(),
+      "selected site details include the planetary target coordinates",
+    );
     await page.waitForFunction(() => {
       const marker = document.querySelector('.earth-site-marker[aria-pressed="true"]');
       if (!marker || marker.hidden) return false;
