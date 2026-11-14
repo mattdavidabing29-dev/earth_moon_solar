@@ -382,6 +382,7 @@ scene.attachLayer(({ group, camera, geographic, radius = 2.55, globe }) => {
                 sitePopover.hidden = true;
                 $(".world-shell").classList.add("site-details-open");
                 scene.setCompositionOffsetX(1.15);
+                scene.setFocusRotation(site.latitude, site.longitude, radius + 0.02);
                 scene.flyTo(site.latitude, site.longitude, 0.55, 2000);
                 detail.hidden = false;
             };
@@ -397,7 +398,7 @@ scene.attachLayer(({ group, camera, geographic, radius = 2.55, globe }) => {
             scene.setTerrainDetail(true);
             scene.setClouds(false);
             scene.flyTo(site.latitude, site.longitude, 0.93, 1800);
-            scene.setFocusRotation(site.latitude, site.longitude);
+            scene.setFocusRotation(site.latitude, site.longitude, radius + 0.08);
             spin(false);
         };
 
@@ -492,7 +493,7 @@ scene.attachLayer(({ group, camera, geographic, radius = 2.55, globe }) => {
         const longitude = THREE.MathUtils.radToDeg(Math.atan2(-localPoint.z, localPoint.x));
         focusedPosition = geographic(latitude, longitude, radius + 0.035);
         scene.flyTo(latitude, longitude, 0.55, 1100);
-        scene.setFocusRotation(latitude, longitude);
+        scene.setFocusRotation(latitude, longitude, radius + 0.035);
     });
     canvas.addEventListener("pointercancel", () => {
         globePress = null;

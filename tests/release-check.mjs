@@ -3,16 +3,14 @@ import assert from "node:assert/strict";
 
 const base = process.env.TEST_URL || "http://127.0.0.1:5173";
 const home = new URL("/", base).href;
-async function assertEarthOnlyLinks(page, selector) {
+async function assertPrimaryNavigation(page, selector) {
   const targets = await page
     .locator(selector)
     .evaluateAll((links) =>
       links.map((link) => new URL(link.href).pathname),
     );
-  assert.ok(
-    targets.every((path) => path === "/"),
-    "navigation only links to Earth",
-  );
+  assert.ok(targets.includes("/"), "navigation links to Earth");
+  assert.ok(targets.includes("/devs.html"), "navigation links to Devs");
 }
 const browser = await chromium.launch({
   headless: true,
@@ -49,7 +47,7 @@ try {
     await page.goto(home);
     await page.waitForSelector(".ready");
     assert.equal(await page.title(), "Earth — Earth Explorer");
-    await assertEarthOnlyLinks(page, ".site-header nav a");
+    await assertPrimaryNavigation(page, ".site-header nav a");
     assert.doesNotMatch(
       await page.locator("body").innerText(),
       /\b(Moon|Mars|Solar System)\b/,
@@ -94,7 +92,7 @@ try {
     if (viewport.width < 760) {
       await page.locator("#mobile-panel-toggle").click();
       await page.locator("#menu-toggle").click();
-      await assertEarthOnlyLinks(page, "#mobile-navigation nav a");
+      await assertPrimaryNavigation(page, "#mobile-navigation nav a");
       await page.keyboard.press("Escape");
     }
 
@@ -119,6 +117,12 @@ try {
     await sitePreview.waitFor({ state: "visible" });
     assert.ok((await sitePreview.innerText()).includes(selectedSite));
     assert.ok(await sitePreview.locator(".earth-site-preview-pin").isVisible());
+    await page.waitForFunction(() => {
+      const pin = document.querySelector(".earth-site-focus-pin");
+      if (!pin || pin.hidden) return false;
+      const bounds = pin.getBoundingClientRect();
+      return Math.abs(bounds.left + bounds.width / 2 - innerWidth / 2) < 20;
+    }, null, { timeout: 5000 });
     await page.waitForFunction(() => {
       const map = document.querySelector(".earth-site-preview-image canvas");
       if (!map) return false;
@@ -157,6 +161,12 @@ try {
       (await page.locator(".ex-detail").innerText()).includes(selectedSite),
       "selected site details open with the 2D terrain view",
     );
+    await page.waitForFunction(() => {
+      const marker = document.querySelector('.earth-site-marker[aria-pressed="true"]');
+      if (!marker || marker.hidden) return false;
+      const bounds = marker.getBoundingClientRect();
+      return Math.abs(bounds.left + bounds.width / 2 - innerWidth / 2) < 60;
+    }, null, { timeout: 5000 });
     if (viewport.width < 760)
       assert.ok(await page.locator(".mobile-panel .earth-site-back").isVisible());
     await page.locator(".earth-site-back").click();
@@ -167,14 +177,40 @@ try {
       await page.waitForURL(home);
       await page.waitForSelector(".ready");
       assert.equal(new URL(page.url()).pathname, "/");
-      await assertEarthOnlyLinks(page, ".site-header nav a");
+      await assertPrimaryNavigation(page, ".site-header nav a");
     }
+
+    await page.goto(new URL("/devs.html", base).href);
+    await page.waitForSelector(".devs-hero h1");
+    assert.equal(await page.title(), "Devs — Earth Explorer");
+    assert.equal(
+      await page.locator('.desktop-navigation a[aria-current="page"]').count(),
+      1,
+      "desktop navigation identifies the current page",
+    );
+    assert.ok(await page.getByText("Three.js", { exact: true }).isVisible());
+    if (viewport.width < 760) {
+      await page.locator("#menu-toggle").click();
+      assert.ok(await page.locator("#mobile-navigation").isVisible());
+      assert.ok(
+        await page.locator('#mobile-navigation a[aria-current="page"]').isVisible(),
+      );
+      await page.keyboard.press("Escape");
+    }
+    if (viewport.width < 760) {
+      await page.locator("#menu-toggle").click();
+      await page.locator("#mobile-menu-sources").click();
+    } else {
+      await page.locator("#nav-science").click();
+    }
+    assert.ok(await page.locator(".ex-dialog").isVisible());
+    await page.keyboard.press("Escape");
 
     assert.deepEqual(errors, []);
     assert.deepEqual(external, []);
     console.log(
       viewport.width,
-      "Earth-only app, retained controls, sources, and legacy redirects passed",
+      "Earth explorer, Devs page, sources, and legacy redirects passed",
     );
     await page.close();
   }

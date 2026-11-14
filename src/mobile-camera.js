@@ -27,7 +27,7 @@ export function mobileCamera(camera, { radius = 2.55, zoom = 0, orbitalDistance 
     // projection matrix (which does NOT fight group.position).
     const narrow = innerWidth < 1100;
     const baseMax = narrow ? innerWidth * 0.10 : innerWidth * 0.14;
-    const targetOffset = detailOpen ? baseMax : baseMax * 0.35;
+    const targetOffset = detailOpen ? 0 : baseMax * 0.35;
 
     const prev = desktopOffsets.get(camera) ?? targetOffset;
     const a = reducedMotion.matches ? 1 : 1 - Math.exp(-1 / 60 * 10); // ~60fps ease
@@ -61,8 +61,7 @@ export function mobileCamera(camera, { radius = 2.55, zoom = 0, orbitalDistance 
 
   const fill = diameter / innerWidth;
   const maxPush = innerWidth * 0.22;
-  const targetFactor = detailOpen ? 1 : 0.55;
-  const targetOffset = maxPush * (1 - fill) * targetFactor;
+  const targetOffset = detailOpen ? 0 : maxPush * (1 - fill) * 0.55;
 
   const prevOffset = offsets.get(camera) ?? targetOffset;
   const smoothed = reducedMotion.matches ? targetOffset : prevOffset + (targetOffset - prevOffset) * a;

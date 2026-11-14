@@ -43,8 +43,8 @@
 }
 .earth-site-connector line {
   stroke: #f1dfaa;
-  stroke-width: 1.5;
-  stroke-dasharray: 4 5;
+  stroke-width: 1 5;
+  stroke-dasharray: 4.5;
   opacity: 0.9;
   vector-effect: non-scaling-stroke;
 }

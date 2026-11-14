@@ -5,7 +5,7 @@ const links = [
   ["planet", "/", "Earth"],
   ["about", "#about", "About"],
   ["resources", "#resources", "Resources"],
-  ["devs", "#devs", "Devs"],
+  ["devs", "/devs.html", "Devs"],
 ];
 const creator = `<a class="creator-link" href="https://x.com/ethanplusai" target="_blank" rel="noopener noreferrer"><strong></strong></a>`;
 export function siteHeader(current) {

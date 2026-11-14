@@ -45,6 +45,10 @@ npm run preview
 
 The production website is written to `dist/`. Serve that folder at the root of a domain on a static host. Keep `index.html`, the legacy redirect pages, and the bundled assets together. The app uses root-relative asset paths; hosting under a repository subpath requires adjusting those paths.
 
+### Deploy on Render
+
+This repository includes a `render.yaml` Blueprint for a Render Static Site. In Render, create a new Blueprint instance and connect this repository; Render will run `npm ci && npm run build` and publish `dist/`. No environment variables or server-side runtime are required.
+
 ## What the visualization represents
 
 **Surfaces and lighting:** Earth imagery is a static composite, not live weather or observation data. Sunlight, cloud motion, terrain shading, and city brightness are adjusted for exploration.

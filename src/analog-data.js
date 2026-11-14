@@ -13,7 +13,7 @@ export const ANALOG_SOURCE =
 export const EARTH_ANALOG_SITES = [
     {
         id: "craters-of-the-moon",
-        name: "Craters of the Moon",
+        name: "Craters of the Moon, United States",
         region: "Idaho, United States",
         body: "moon",
         similarityRate: "52–54%",
@@ -39,7 +39,7 @@ export const EARTH_ANALOG_SITES = [
     },
     {
         id: "lanzarote",
-        name: "Lanzarote",
+        name: "Lanzarote, Spain",
         region: "Canary Islands, Spain",
         body: "moon",
         similarityRate: "56–60%",
@@ -71,7 +71,7 @@ export const EARTH_ANALOG_SITES = [
     },
     {
         id: "sudbury-basin",
-        name: "Sudbury Basin",
+        name: "Sudbury Basin, Canada",
         region: "Ontario, Canada",
         body: "moon",
         similarityRate: "41–45%",
@@ -98,7 +98,7 @@ export const EARTH_ANALOG_SITES = [
     },
     {
         id: "atacama",
-        name: "Atacama Desert",
+        name: "Atacama Desert, Chile",
         region: "Yungay region, Chile",
         body: "mars",
         similarityRate: null,
@@ -125,7 +125,7 @@ export const EARTH_ANALOG_SITES = [
     },
     {
         id: "mcmurdo-dry-valleys",
-        name: "McMurdo Dry Valleys",
+        name: "McMurdo Dry Valleys, Antarctica",
         region: "Antarctica",
         body: "mars",
         similarityRate: null,
@@ -153,7 +153,7 @@ export const EARTH_ANALOG_SITES = [
     },
     {
         id: "devon-island",
-        name: "Devon Island",
+        name: "Devon Island, Canada",
         region: "Haughton Crater, Nunavut, Canada",
         body: "mars",
         similarityRate: null,
@@ -180,7 +180,7 @@ export const EARTH_ANALOG_SITES = [
     },
     {
         id: "mauna-kea-mauna-loa",
-        name: "Mauna Kea and Mauna Loa",
+        name: "Mauna Kea and Mauna Loa, United States",
         region: "Hawaii, United States",
         body: "mars",
         similarityRate: null,
@@ -208,7 +208,7 @@ export const EARTH_ANALOG_SITES = [
     },
     {
         id: "rio-tinto",
-        name: "Rio Tinto",
+        name: "Rio Tinto, Spain",
         region: "Andalusia, Spain",
         body: "mars",
         similarityRate: null,
@@ -235,7 +235,7 @@ export const EARTH_ANALOG_SITES = [
     },
     {
         id: "mojave",
-        name: "Mojave Desert",
+        name: "Mojave Desert, United States",
         region: "Dumont Dunes and Kelso, California, United States",
         body: "mars",
         similarityRate: null,

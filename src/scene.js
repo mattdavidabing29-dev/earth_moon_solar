@@ -63,7 +63,9 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
  let orbitalDistance=12.4,displayDistance=12.4,orbitalFocused=false;
  let targetQ=orientation(17,77);group.quaternion.copy(targetQ);
  let targetSun=sun.clone(),pointer={x:0,y:0},down=null,frame=0,flight=null,cloudOn=true,focusRotationAxis=null;
+ const focusTarget=new THREE.Vector3();
  const axisY=new THREE.Vector3(0,1,0),axisX=new THREE.Vector3(1,0,0),focusRotationSpeed=2*Math.PI/24;
+ function aimCamera(){if(focusRotationAxis){focusTarget.copy(focusRotationAxis).multiplyScalar(focusRadius).applyQuaternion(group.quaternion).add(group.position);camera.lookAt(focusTarget);}else camera.lookAt(0,0,0);}
  function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}resize();addEventListener('resize',resize);
  function leaveHome(){onInteract?.();}
  canvas.addEventListener('pointerdown',e=>{if(driver||terrainDetailEnabled)return;if(e.button!==0)return;leaveHome();rotation=false;flight=null;canvas.setPointerCapture(e.pointerId);down={x:e.clientX,y:e.clientY};canvas.classList.add('dragging');});
@@ -72,7 +74,7 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
   canvas.addEventListener('wheel',e=>{if(driver)return;e.preventDefault();leaveHome();flight=null;if(orbital)orbitalDistance=THREE.MathUtils.clamp(orbitalDistance*Math.exp(e.deltaY*.001),3.6,80);else targetZoom=THREE.MathUtils.clamp(targetZoom+e.deltaY*.001,0,1);},{passive:false});
  
   let pinch=null;canvas.addEventListener('touchstart',e=>{if(driver)return;if(e.touches.length===2){pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);down=null;}},{passive:true});canvas.addEventListener('touchmove',e=>{if(driver)return;if(e.touches.length===2&&pinch){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(orbital)orbitalDistance=THREE.MathUtils.clamp(orbitalDistance*pinch/d,3.6,80);else targetZoom=THREE.MathUtils.clamp(targetZoom+(d-pinch)*.003,0,1);pinch=d;down=null;}},{passive:true});canvas.addEventListener('touchend',()=>pinch=null);
- let driver=null,arrivalStart=null,arrivalTarget=null;
+ let driver=null,arrivalStart=null,arrivalTarget=null,focusRadius=R;
  const clock=new THREE.Clock();const temp=new THREE.Vector3(),world=new THREE.Vector3(),inverse=new THREE.Quaternion();
  function animate(t){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);if(document.hidden)return;frame++;
  if(driver){driver(t,dt);group.updateMatrixWorld();camera.updateMatrixWorld();renderer.render(scene,camera);return;}
@@ -88,7 +90,7 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
  const parallax=!terrainDetailEnabled&&!focusRotationAxis;
  camera.position.x+=(((reduced||!parallax)?0:pointer.x*.06)-camera.position.x)*.04;
  camera.position.y+=(((reduced||!parallax)?0:-pointer.y*.04)-camera.position.y)*.04;
- camera.lookAt(0,0,0);
+ aimCamera();
  if(orbital){displayDistance+=(orbitalDistance-displayDistance)*(1-Math.exp(-dt*3));camera.position.z=displayDistance*(narrow?1.65:1);camera.lookAt(0,0,0);}
  if(story&&!storyNight)targetSun.copy(camera.position).sub(group.position).normalize().add(new THREE.Vector3(-.16,.25,0)).normalize();
  storyFill.intensity+=((story&&!storyNight?.85:0)-storyFill.intensity)*(1-Math.exp(-dt*3));
@@ -98,7 +100,7 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
  clouds.material.opacity+=(cloudOn?.84-clouds.material.opacity:-clouds.material.opacity)*.07;
  if(zoom>.82)clouds.material.opacity*=(1-(zoom-.82)/.18);
  orbitRing.position.copy(group.position);orbitRing.material.opacity=orbital?0:(1-zoom)*.10;
- if(!lunar){const mobileDistance=mobileCamera(camera,{zoom,orbitalDistance:orbital?displayDistance:null});if(mobileDistance!==null){group.position.x=0;group.position.y=0;camera.position.set(0,0,mobileDistance);camera.lookAt(0,0,0);}}
+ if(!lunar){const mobileDistance=mobileCamera(camera,{zoom,orbitalDistance:orbital?displayDistance:null});if(mobileDistance!==null){group.position.x=0;group.position.y=0;camera.position.set(0,0,mobileDistance);aimCamera();}}
  group.updateMatrixWorld();camera.updateMatrixWorld();
  if(frame%15===0){inverse.copy(group.quaternion).invert();temp.set(0,0,1).applyQuaternion(inverse);onView?.({lat:Math.asin(temp.y)*180/Math.PI,lon:Math.atan2(-temp.z,temp.x)*180/Math.PI,altitude:Math.round((camera.position.z-R)*6371/R),zoom,rotation});}
  attachedLayer?.update(t,dt);
@@ -129,8 +131,8 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
   createOverlay(factory){return factory({scene,group,camera,renderer,radius:R,sunDirection:sun,hideOrbitRing(){orbitRing.visible=false;},lightFrame(){targetSun.copy(camera.position).sub(group.position).normalize().add(new THREE.Vector3(-.16,.25,0)).normalize();sun.copy(targetSun);light.position.copy(group.position).addScaledVector(sun,10);light.target.position.copy(group.position);light.target.updateMatrixWorld();}});},
   setFrameDriver(fn){driver=fn;},
   setCompositionOffsetX(value){compositionOffsetX=value;},
-  setFocusRotation(lat,lon){focusRotationAxis=geographic(lat,lon,1).normalize();rotation=true;},
-  clearFocusRotation(){focusRotationAxis=null;},
+  setFocusRotation(lat,lon,distance=R){focusRotationAxis=geographic(lat,lon,1).normalize();focusRadius=distance;rotation=true;},
+  clearFocusRotation(){focusRotationAxis=null;focusRadius=R;},
   setTerrainDetail(on){
    if(on){pointer={x:0,y:0};camera.position.x=0;camera.position.y=0;down=null;canvas.classList.remove('dragging');}
    if(terrainDetailEnabled===on)return;
