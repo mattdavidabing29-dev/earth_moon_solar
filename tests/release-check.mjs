@@ -123,6 +123,20 @@ try {
       const bounds = pin.getBoundingClientRect();
       return Math.abs(bounds.left + bounds.width / 2 - innerWidth / 2) < 20;
     }, null, { timeout: 5000 });
+    const tagAndCardOverlap = await page.evaluate(() => {
+      const tag = document.querySelector('.earth-site-marker[aria-pressed="true"]');
+      const card = document.querySelector(".earth-site-popover");
+      if (!tag || tag.hidden || !card || card.hidden) return false;
+      const tagBounds = tag.getBoundingClientRect();
+      const cardBounds = card.getBoundingClientRect();
+      return (
+        tagBounds.left < cardBounds.right &&
+        tagBounds.right > cardBounds.left &&
+        tagBounds.top < cardBounds.bottom &&
+        tagBounds.bottom > cardBounds.top
+      );
+    });
+    assert.equal(tagAndCardOverlap, false, "preview does not cover the selected landmark tag");
     await page.waitForFunction(() => {
       const map = document.querySelector(".earth-site-preview-image canvas");
       if (!map) return false;
