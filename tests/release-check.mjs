@@ -1,20 +1,175 @@
-import {chromium} from '@playwright/test';
-import assert from 'node:assert/strict';
-const base=process.env.TEST_URL||'http://127.0.0.1:5173';
-const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--enable-webgl','--ignore-gpu-blocklist']});
-try{for(const viewport of [{width:1440,height:900},{width:390,height:844}]){
- const page=await browser.newPage({viewport}),errors=[],external=[];
- page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`);});page.on('request',r=>{if(/^https?:/.test(r.url())&&!r.url().startsWith(base))external.push(r.url());});
- for(const path of ['/','/moon.html']){
-  await page.goto(base+path);await page.waitForSelector('.ready');if(path.includes('moon'))await page.waitForFunction(()=>document.querySelector('canvas').dataset.journeyProgress==='1.0000');
-  assert.equal(await page.locator('.desktop-navigation a').count(),3);assert.equal(await page.locator('[data-chapter]').count(),4);
-  assert.doesNotMatch(await page.locator('body').innerText(),/Apollo|Civilization|History|Surveyor|Chandrayaan|Chang’e/);
-  await page.screenshot({path:`/tmp/release-${path==='/'?'earth':'moon'}-${viewport.width}.png`});
-  const c=page.locator('canvas');const before=+await c.getAttribute('data-camera-distance');await page.locator('#ex-in').click();await page.waitForTimeout(900);assert.ok(+await c.getAttribute('data-camera-distance')<before-.05);
-  if(viewport.width<760)await page.locator('#mobile-panel-toggle').click();
-  await page.locator('[data-chapter="2"]').click();if(viewport.width<760)await page.locator('#mobile-panel-toggle').click();await page.locator('#ex-range').fill('0.8');await page.locator('#ex-range').dispatchEvent('input');
-  if(viewport.width<760){await page.locator('#mobile-panel-toggle').click();await page.locator('#menu-toggle').click();await page.locator('#mobile-menu-sources').click();}else await page.locator('#nav-science').click();
-  assert.ok(await page.locator('.ex-dialog').isVisible());await page.keyboard.press('Escape');
- }
- assert.deepEqual(errors,[]);assert.deepEqual(external,[]);console.log(viewport.width,'Earth and Moon: assets, controls, sources, clean navigation, and no external requests passed');await page.close();
-}}finally{await browser.close();}
+import { chromium } from "@playwright/test";
+import assert from "node:assert/strict";
+
+const base = process.env.TEST_URL || "http://127.0.0.1:5173";
+const home = new URL("/", base).href;
+async function assertEarthOnlyLinks(page, selector) {
+  const targets = await page
+    .locator(selector)
+    .evaluateAll((links) =>
+      links.map((link) => new URL(link.href).pathname),
+    );
+  assert.ok(
+    targets.every((path) => path === "/"),
+    "navigation only links to Earth",
+  );
+}
+const browser = await chromium.launch({
+  headless: true,
+  ...(process.env.CHROMIUM_PATH
+    ? { executablePath: process.env.CHROMIUM_PATH }
+    : {}),
+  args: ["--enable-webgl", "--ignore-gpu-blocklist"],
+});
+
+try {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    const page = await browser.newPage({ viewport });
+    const errors = [];
+    const external = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    page.on("response", (response) => {
+      if (response.status() >= 400)
+        errors.push(`${response.status()} ${response.url()}`);
+    });
+    page.on("request", (request) => {
+      if (
+        /^https?:/.test(request.url()) &&
+        !request.url().startsWith(base)
+      )
+        external.push(request.url());
+    });
+
+    await page.goto(home);
+    await page.waitForSelector(".ready");
+    assert.equal(await page.title(), "Earth — Earth Explorer");
+    await assertEarthOnlyLinks(page, ".site-header nav a");
+    assert.doesNotMatch(
+      await page.locator("body").innerText(),
+      /\b(Moon|Mars|Solar System)\b/,
+    );
+    await page.screenshot({
+      path: `/tmp/earth-only-${viewport.width}.png`,
+    });
+
+    const canvas = page.locator("canvas");
+    const before = +await canvas.getAttribute("data-camera-distance");
+    await page.locator("#ex-in").click();
+    await page.waitForTimeout(900);
+    assert.ok(
+      +await canvas.getAttribute("data-camera-distance") < before - 0.05,
+      "Earth zoom remains available",
+    );
+
+    const box = await canvas.boundingBox();
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    await page.mouse.click(x, y);
+    await page.waitForTimeout(100);
+    const beforeDrag = await canvas.screenshot();
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    assert.equal(
+      await canvas.evaluate((element) =>
+        element.classList.contains("dragging"),
+      ),
+      true,
+      "Earth pointer interaction starts dragging",
+    );
+    await page.mouse.move(x + 110, y + 45, { steps: 5 });
+    await page.mouse.up();
+    await page.waitForTimeout(350);
+    assert.notDeepEqual(
+      await canvas.screenshot(),
+      beforeDrag,
+      "Dragging changes the Earth view",
+    );
+
+    if (viewport.width < 760) {
+      await page.locator("#mobile-panel-toggle").click();
+      await page.locator("#menu-toggle").click();
+      await assertEarthOnlyLinks(page, "#mobile-navigation nav a");
+      await page.keyboard.press("Escape");
+    }
+
+    if (viewport.width < 760) {
+      await page.locator("#menu-toggle").click();
+      await page.locator("#mobile-menu-sources").click();
+    } else {
+      await page.locator("#nav-science").click();
+    }
+    assert.ok(await page.locator(".ex-dialog").isVisible());
+    await page.keyboard.press("Escape");
+
+    const selectedSite = await page.evaluate(() => {
+      const marker = [...document.querySelectorAll(".earth-site-marker")].find(
+        (item) => !item.hidden,
+      );
+      if (!marker) throw new Error("No visible Earth analog pin");
+      marker.click();
+      return marker.innerText;
+    });
+    const sitePreview = page.locator(".earth-site-popover");
+    await sitePreview.waitFor({ state: "visible" });
+    assert.ok((await sitePreview.innerText()).includes(selectedSite));
+    await page.waitForFunction(() => {
+      const map = document.querySelector(".earth-site-preview-image canvas");
+      if (!map) return false;
+      const pixel = map
+        .getContext("2d")
+        .getImageData(map.width / 2, map.height / 2, 1, 1).data;
+      return pixel[0] !== 7 || pixel[1] !== 19 || pixel[2] !== 27;
+    });
+    await sitePreview.getByRole("button", { name: "Full site details" }).click();
+    await page.locator(".ex-detail").waitFor({ state: "visible" });
+    const focusedPin = page.locator('.earth-site-marker[aria-pressed="true"]');
+    await focusedPin.waitFor({ state: "visible" });
+    if (viewport.width >= 760) {
+      const focusedPinBounds = await focusedPin.boundingBox();
+      assert.ok(
+        focusedPinBounds.x > viewport.width * 0.25,
+        "focused globe stays visible instead of shifting too far left",
+      );
+    }
+    await page.waitForFunction(() => {
+      const map = document.querySelector(".earth-site-terrain canvas");
+      if (!map) return false;
+      const pixel = map
+        .getContext("2d")
+        .getImageData(map.width / 2, map.height / 2, 1, 1).data;
+      return pixel[0] !== 7 || pixel[1] !== 19 || pixel[2] !== 27;
+    });
+    assert.ok(
+      (await page.locator(".ex-detail").innerText()).includes(selectedSite),
+      "selected site details open with the 2D terrain view",
+    );
+    if (viewport.width < 760)
+      assert.ok(await page.locator(".mobile-panel .earth-site-back").isVisible());
+    await page.locator(".earth-site-back").click();
+    assert.equal(await page.locator(".ex-detail").isVisible(), false);
+
+    for (const legacyPath of ["/moon.html", "/solar.html"]) {
+      await page.goto(new URL(legacyPath, base).href, { waitUntil: "commit" });
+      await page.waitForURL(home);
+      await page.waitForSelector(".ready");
+      assert.equal(new URL(page.url()).pathname, "/");
+      await assertEarthOnlyLinks(page, ".site-header nav a");
+    }
+
+    assert.deepEqual(errors, []);
+    assert.deepEqual(external, []);
+    console.log(
+      viewport.width,
+      "Earth-only app, retained controls, sources, and legacy redirects passed",
+    );
+    await page.close();
+  }
+} finally {
+  await browser.close();
+}

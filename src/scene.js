@@ -3,9 +3,8 @@ import { registerNavigation, incomingJourney, finishArrival, leaveWithFrame, beg
 import * as THREE from 'three';
 import {createStarfield} from './starfield.js';
 
-
-
 const R=2.55;
+const MIN_Z=2.9;
 export const geographic=(lat,lon,r=R)=>new THREE.Vector3(Math.cos(lat*Math.PI/180)*Math.cos(lon*Math.PI/180)*r,Math.sin(lat*Math.PI/180)*r,-Math.cos(lat*Math.PI/180)*Math.sin(lon*Math.PI/180)*r);
 
 export function orientation(lat,lon){return new THREE.Quaternion().setFromEuler(new THREE.Euler(lat*Math.PI/180,-lon*Math.PI/180-Math.PI/2,0,'XYZ'));}
@@ -30,16 +29,15 @@ export function createScene(canvas,{onReady,onInteract,onView,exposure=1.06,dayl
  const sunUniform={value:sun};
  const citiesUniform={value:1};
 
- // A cool, deliberately exposed night surface keeps geography readable.
- // Both the fill and city emission fade out toward the sunlit hemisphere.
  surface.onBeforeCompile = shader => {
   shader.uniforms.sunDirection = sunUniform;
-  shader.uniforms.citiesEnabled=citiesUniform;
+  shader.uniforms.citiesEnabled = citiesUniform;
   shader.vertexShader = 'varying vec3 globeNormal;\n' + shader.vertexShader;
-  shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `
-   #include <begin_vertex>
-   globeNormal = normalize(mat3(modelMatrix) * normal);
-  `);
+  shader.vertexShader = shader.vertexShader.replace(
+   '#include <displacementmap_vertex>',
+   `#include <displacementmap_vertex>
+    globeNormal = normalize(mat3(modelMatrix) * normalize(transformedNormal));`,
+  );
   shader.fragmentShader = 'uniform vec3 sunDirection; uniform float citiesEnabled; varying vec3 globeNormal;\n' + shader.fragmentShader;
   shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `
    #include <emissivemap_fragment>
@@ -52,6 +50,7 @@ export function createScene(canvas,{onReady,onInteract,onView,exposure=1.06,dayl
   `);
  };
  const globe=new THREE.Mesh(new THREE.SphereGeometry(R,160,100),surface);globe.receiveShadow=story;group.add(globe);
+ let terrainDetailEnabled=false;
  const clouds=new THREE.Mesh(new THREE.SphereGeometry(R+.013,128,80),new THREE.MeshPhongMaterial({map:cloudMap,transparent:true,opacity:.84,depthWrite:false,shininess:3,emissiveMap:cloudMap,emissive:0x20344f,emissiveIntensity:.35}));group.add(clouds);
  function atmosphere(radius,outer){return new THREE.Mesh(new THREE.SphereGeometry(radius,100,64),new THREE.ShaderMaterial({uniforms:{sunDirection:sunUniform},vertexShader:'#include <common>\n#include <logdepthbuf_pars_vertex>\nvarying vec3 worldNormal;varying vec3 worldPosition;void main(){worldNormal=normalize(mat3(modelMatrix)*normal);worldPosition=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*viewMatrix*vec4(worldPosition,1.);\n#include <logdepthbuf_vertex>\n}',fragmentShader:`#include <logdepthbuf_pars_fragment>
 uniform vec3 sunDirection;varying vec3 worldNormal;varying vec3 worldPosition;void main(){
@@ -60,11 +59,11 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
  group.add(atmosphere(R+.032,false));group.add(atmosphere(R+.075,true));
  const orbitRing=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(Array.from({length:241},(_,i)=>{const a=i/240*Math.PI*2;return new THREE.Vector3(Math.cos(a)*3.05,Math.sin(a)*3.05,0);})),new THREE.LineBasicMaterial({color:0x69818d,transparent:true,opacity:.10}));orbitRing.rotation.set(1.12,.4,-.35);scene.add(orbitRing);
  createStarfield(scene).ready.catch(()=>{});canvas.dataset.starfield='distant-directions';
- let home=true,zoom=0,targetZoom=0,rotation=true,reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ let home=true,zoom=0,targetZoom=0,rotation=true,reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,compositionOffsetX=0;
  let orbitalDistance=12.4,displayDistance=12.4,orbitalFocused=false;
  let targetQ=orientation(17,77);group.quaternion.copy(targetQ);
- let targetSun=sun.clone(),pointer={x:0,y:0},down=null,frame=0,flight=null,cloudOn=true;
- const axisY=new THREE.Vector3(0,1,0),axisX=new THREE.Vector3(1,0,0);
+ let targetSun=sun.clone(),pointer={x:0,y:0},down=null,frame=0,flight=null,cloudOn=true,focusRotationAxis=null;
+ const axisY=new THREE.Vector3(0,1,0),axisX=new THREE.Vector3(1,0,0),focusRotationSpeed=2*Math.PI/24;
  function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}resize();addEventListener('resize',resize);
  function leaveHome(){onInteract?.();}
  canvas.addEventListener('pointerdown',e=>{if(driver)return;if(e.button!==0)return;leaveHome();rotation=false;flight=null;canvas.setPointerCapture(e.pointerId);down={x:e.clientX,y:e.clientY};canvas.classList.add('dragging');});
@@ -76,17 +75,27 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
  const clock=new THREE.Clock();const temp=new THREE.Vector3(),world=new THREE.Vector3(),inverse=new THREE.Quaternion();
  function animate(t){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);if(document.hidden)return;frame++;
  if(driver){driver(t,dt);group.updateMatrixWorld();camera.updateMatrixWorld();renderer.render(scene,camera);return;}
- if(flight){const p=Math.min(1,(t-flight.start)/flight.duration),ease=p*p*(3-2*p);targetQ.slerpQuaternions(flight.from,flight.to,ease);targetZoom=THREE.MathUtils.lerp(flight.fromZoom??0,flight.zoom,ease)-Math.sin(Math.PI*ease)*.12;if(p===1)flight=null;}
- else if(!orbital&&rotation&&!reduced&&!down){targetQ.premultiply(new THREE.Quaternion().setFromAxisAngle(axisY,dt*.021));}
- group.quaternion.slerp(targetQ,1-Math.exp(-dt*5));zoom+=(targetZoom-zoom)*(1-Math.exp(-dt*3));
- const narrow=innerWidth<760;const x=orbital?(narrow||orbitalFocused?0:orbitalDistance<20?1.45:0):story?(narrow?.15:1.20):home?(narrow?.3:1.95):0;group.position.x+=(x-group.position.x)*(1-Math.exp(-dt*2));group.position.y+=((orbital?(narrow?1.1:.4):story&&narrow?1.25:home&&narrow?.88:.13)-group.position.y)*(1-Math.exp(-dt*2));
- camera.position.z=10.5-zoom*6.65;camera.position.x+=((reduced?0:pointer.x*.06)-camera.position.x)*.04;camera.position.y+=((reduced?0:-pointer.y*.04)-camera.position.y)*.04;camera.lookAt(0,0,0);
+ const flying=flight!==null;
+ if(flight){const p=Math.min(1,(t-flight.start)/flight.duration),ease=p*p*(3-2*p);targetQ.slerpQuaternions(flight.from,flight.to,ease);targetZoom=THREE.MathUtils.lerp(flight.fromZoom??0,flight.zoom,ease)-Math.sin(Math.PI*ease)*.12;zoom=targetZoom;if(p===1)flight=null;}
+ else if(!orbital&&rotation&&!reduced&&!down){
+  const spinStep=new THREE.Quaternion().setFromAxisAngle(focusRotationAxis||axisY,dt*(focusRotationAxis?focusRotationSpeed:.021));
+  if(focusRotationAxis)targetQ.multiply(spinStep);else targetQ.premultiply(spinStep);
+ }
+ group.quaternion.slerp(targetQ,1-Math.exp(-dt*5));if(!flying)zoom+=(targetZoom-zoom)*(1-Math.exp(-dt*3));
+ const narrow=innerWidth<760;const x=(orbital?(narrow||orbitalFocused?0:orbitalDistance<20?1.45:0):story?(narrow?.15:1.20):home?(narrow?.3:1.95):0)+(narrow?0:compositionOffsetX);group.position.x+=(x-group.position.x)*(1-Math.exp(-dt*2));group.position.y+=((orbital?(narrow?1.1:.4):story&&narrow?1.25:home&&narrow?.88:.13)-group.position.y)*(1-Math.exp(-dt*2));
+ camera.position.z=THREE.MathUtils.lerp(10.5,MIN_Z,zoom);
+ const parallax=!terrainDetailEnabled&&!focusRotationAxis;
+ camera.position.x+=(((reduced||!parallax)?0:pointer.x*.06)-camera.position.x)*.04;
+ camera.position.y+=(((reduced||!parallax)?0:-pointer.y*.04)-camera.position.y)*.04;
+ camera.lookAt(0,0,0);
  if(orbital){displayDistance+=(orbitalDistance-displayDistance)*(1-Math.exp(-dt*3));camera.position.z=displayDistance*(narrow?1.65:1);camera.lookAt(0,0,0);}
  if(story&&!storyNight)targetSun.copy(camera.position).sub(group.position).normalize().add(new THREE.Vector3(-.16,.25,0)).normalize();
  storyFill.intensity+=((story&&!storyNight?.85:0)-storyFill.intensity)*(1-Math.exp(-dt*3));
  canvas.dataset.lighting=storyNight?'night':'day';
  sun.lerp(targetSun,1-Math.exp(-dt*3)).normalize();light.position.copy(group.position).addScaledVector(sun,10);light.target.position.copy(group.position);light.target.updateMatrixWorld();
- if(!reduced&&!orbital)clouds.rotation.y+=dt*.002;clouds.material.opacity+=(cloudOn?.84-clouds.material.opacity:-clouds.material.opacity)*.07;
+ if(!reduced&&!orbital)clouds.rotation.y+=dt*.002;
+ clouds.material.opacity+=(cloudOn?.84-clouds.material.opacity:-clouds.material.opacity)*.07;
+ if(zoom>.82)clouds.material.opacity*=(1-(zoom-.82)/.18);
  orbitRing.position.copy(group.position);orbitRing.material.opacity=orbital?0:(1-zoom)*.10;
  if(!lunar){const mobileDistance=mobileCamera(camera,{zoom,orbitalDistance:orbital?displayDistance:null});if(mobileDistance!==null){group.position.x=0;group.position.y=0;camera.position.set(0,0,mobileDistance);camera.lookAt(0,0,0);}}
  group.updateMatrixWorld();camera.updateMatrixWorld();
@@ -118,15 +127,29 @@ vec3 n=normalize(worldNormal);vec3 v=normalize(cameraPosition-worldPosition);flo
   whenReady,
   createOverlay(factory){return factory({scene,group,camera,renderer,radius:R,sunDirection:sun,hideOrbitRing(){orbitRing.visible=false;},lightFrame(){targetSun.copy(camera.position).sub(group.position).normalize().add(new THREE.Vector3(-.16,.25,0)).normalize();sun.copy(targetSun);light.position.copy(group.position).addScaledVector(sun,10);light.target.position.copy(group.position);light.target.updateMatrixWorld();}});},
   setFrameDriver(fn){driver=fn;},
+  setCompositionOffsetX(value){compositionOffsetX=value;},
+  setFocusRotation(lat,lon){focusRotationAxis=geographic(lat,lon,1).normalize();rotation=true;},
+  clearFocusRotation(){focusRotationAxis=null;},
+  setTerrainDetail(on){
+   if(terrainDetailEnabled===on)return;
+   terrainDetailEnabled=on;
+   globe.geometry.dispose();
+   globe.geometry=new THREE.SphereGeometry(R,on?384:160,on?192:100);
+   surface.displacementMap=on?bump:null;
+   surface.displacementScale=on?.055:0;
+   surface.displacementBias=on?-.027:0;
+   surface.bumpScale=on?.035:.012;
+   surface.needsUpdate=true;
+  },
   setOrbitalTime(seconds){if(orbital){globe.rotation.y=seconds*Math.PI*2/86164.0905;clouds.rotation.y=globe.rotation.y;}},
   setOrbitFocus(on){orbitalFocused=on;},
   trackOrbit(lat,lon){rotation=false;flight=null;targetQ.copy(orientation(lat,lon));},
   frameOrbit(distance){orbitalDistance=THREE.MathUtils.clamp(distance,3.6,80);},
-  attachLayer(factory){attachedLayer=factory({scene,group,camera,renderer,radius:R,geographic});return attachedLayer;},
+  attachLayer(factory){attachedLayer=factory({scene,group,camera,renderer,radius:R,globe,geographic});return attachedLayer;},
   setCityLights(on){citiesUniform.value=on?1:0;},
   explore(){},
   home(){home=true;targetZoom=0;rotation=true;flight=null;targetQ.copy(orientation(17,77));targetSun.fromArray(daylight).normalize();},
-  flyTo(lat,lon,close=.50,duration=3400){home=false;rotation=false;flight={from:group.quaternion.clone(),to:orientation(lat,lon),fromZoom:zoom,zoom:Math.min(close,innerWidth<760?.28:.66),start:performance.now(),duration:reduced?200:duration};},
+  flyTo(lat,lon,close=.50,duration=3400){home=false;rotation=false;const maxClose=innerWidth<760?.90:.95;flight={from:group.quaternion.clone(),to:orientation(lat,lon),fromZoom:zoom,zoom:Math.min(close,maxClose),start:performance.now(),duration:reduced?200:duration};},
   zoom(delta){leaveHome();flight=null;if(orbital){orbitalDistance=THREE.MathUtils.clamp(orbitalDistance*Math.exp(-delta*3),3.6,80);return;}targetZoom=THREE.MathUtils.clamp(targetZoom+delta,0,1);},
   setLight(value){const a=(value-12)/12*Math.PI;targetSun.set(Math.sin(a),.32,Math.cos(a)).normalize();},
   mode(name){storyNight=story&&name==='night';if(name==='night')targetSun.set(.35,.15,-1).normalize();if(name==='day')targetSun.fromArray(daylight).normalize();if(name==='sunset')targetSun.set(-1,.15,.08).normalize();},

@@ -1,23 +1,20 @@
-# Earth, Moon & Solar System
+# Earth Explorer
 
-Explore our home planet, cross to the Moon, and travel through the solar system—all in your browser.
+Explore our home planet with an interactive globe, photographic imagery, and adjustable sunlight—all in your browser.
 
-A Three.js experience by **[Ethan Rogers](https://x.com/ethanplusai)**, with photographic planetary surfaces, lunar terrain, and NASA/JPL orbital data.
+A Three.js experience by **[Ethan Rogers](https://x.com/ethanplusai)**, focused on Earth's continents, oceans, clouds, and night lights.
 
 **[Explore earth.ethanplus.ai](https://earth.ethanplus.ai)** · [Run locally](#run-locally) · [Data & credits](CREDITS.md) · [MIT license](LICENSE)
 
 ![Interactive Earth with illuminated oceans, clouds, and terrain](docs/preview.png)
 
-## Three places to explore
+## Explore Earth
 
-| Earth | Moon | Solar System |
-| --- | --- | --- |
-| Rotate a photographic globe, approach mountains and coastlines, and adjust the sunlight. | Explore the near side, far side, and south pole using NASA lunar imagery and elevation. | Travel among all eight planets and 21 selected moons with dated orbital motion. |
-| Surface relief, clouds, atmosphere, and night lights. | Adjustable lighting, terrain detail, and a guided camera tour. | Planet and moon views, playback controls, orbital paths, and a true-scale option. |
+Rotate the photographic globe and zoom toward mountains and coastlines. Earth imagery, relief, clouds, atmosphere, and night lights are available in the single Earth experience.
 
-Smooth Earth–Moon–Solar System transitions connect the views. The star field uses measured star positions. Desktop and phone layouts include labeled controls, touch interaction, and support for reduced-motion preferences.
+The star field uses measured star positions. Desktop and phone layouts include labeled controls, touch interaction, and support for reduced-motion preferences.
 
-This repository contains the standalone Earth, Moon, and Solar System experience. The live project at **earth.ethanplus.ai** includes additional explorations.
+This repository publishes the Earth experience only. The legacy `/moon.html` and `/solar.html` routes redirect to Earth. Their old source files and data assets remain in the repository but are not loaded by the published experience.
 
 ## Run locally
 
@@ -36,10 +33,8 @@ No accounts, API keys, or environment variables are required. All imagery and or
 
 ### Controls
 
-- **Earth:** drag to rotate, scroll or pinch to zoom, choose a geographic view, and move the Sunlight slider.
-- **Moon:** drag to rotate, scroll or pinch to zoom, choose a terrain view, or press Play for a camera tour.
-- **Solar System:** drag to orbit, scroll or pinch to approach, select a planet or moon, and change the date or playback speed. Switch to True scale to restore physical sizes and distances.
-- **On phones:** open **View controls** on Earth and Moon, or **Controls** in the Solar System. **Explore** switches pages and opens the source notes.
+- **Earth:** drag to rotate and scroll or pinch to zoom.
+- **On phones:** open **View controls** for globe controls. **Explore** opens Earth and source notes.
 
 ## Build and deploy
 
@@ -48,30 +43,23 @@ npm run build
 npm run preview
 ```
 
-The production website is written to `dist/`. Serve that folder at the root of a domain on a static host. Keep `index.html`, `moon.html`, `solar.html`, and the bundled assets together. The app uses root-relative asset paths; hosting under a repository subpath requires adjusting those paths.
+The production website is written to `dist/`. Serve that folder at the root of a domain on a static host. Keep `index.html`, the legacy redirect pages, and the bundled assets together. The app uses root-relative asset paths; hosting under a repository subpath requires adjusting those paths.
 
 ## What the visualization represents
 
-**Orbital coverage:** 1 January 2026 through 1 January 2027. NASA/JPL Horizons positions and velocities are sampled daily for planets and hourly for moons, then interpolated. Playback remains within this interval; it is not a live feed.
+**Surfaces and lighting:** Earth imagery is a static composite, not live weather or observation data. Sunlight, cloud motion, terrain shading, and city brightness are adjusted for exploration.
 
-**Scale:** the illustrated overview compresses distances and enlarges bodies for legibility. True scale restores physical radii and distances. Earth–Moon transitions use a staged composition.
-
-**Surfaces and lighting:** Earth and Moon imagery are static composites. Cloud motion, sunlight, surface rotation, axial orientation, and exposure are illustrative. Most smaller moons use schematic surfaces. The project includes all eight planets and selected moons, rather than every solar-system object.
-
-The experience is intended for exploration and education, not navigation or precise sky prediction. See [orbital data notes](public/data/solar/README.md), [lunar imagery notes](public/data/moon/README.md), and [source credits](CREDITS.md) for details.
+The experience is intended for exploration and education, not navigation or precise observation. See [source credits](CREDITS.md) for imagery and asset details.
 
 ## Development
 
-The project uses JavaScript modules, Three.js, and Vite. Each page has its own entry point:
+The project uses JavaScript modules, Three.js, and Vite. The published entry point is:
 
 | File | Purpose |
 | --- | --- |
 | `src/main.js` | Earth views and controls |
-| `src/moon.js` | Lunar globe and camera tour |
-| `src/solar.js` | Solar-system rendering and interaction |
 | `src/scene.js` | Shared Earth rendering and lighting |
-| `src/solar-model.js` | Orbital interpolation and reference paths |
-| `public/` | Bundled textures, datasets, and source notes |
+| `public/` | Earth imagery and retained legacy assets |
 
 Run the unit checks with `npm test`. For browser checks, install Chromium and start the development server:
 
@@ -84,13 +72,10 @@ In another terminal:
 
 ```sh
 npm run test:release
-npm run test:solar
-npm run test:moon
-npm run test:journeys
 npm run test:stars
 ```
 
-Tests cover asset loading, navigation, desktop and mobile controls, orbital interpolation, playback, page transitions, and star-field stability. Browser tests expect port 5173; set `TEST_URL` and `TEST_DEV_URL` to use another address. Set `CHROMIUM_PATH` to select an existing Chromium executable.
+Tests cover Earth asset loading, legacy-route redirects, desktop and mobile controls, and star-field stability. Browser tests expect port 5173; set `TEST_URL` to use another address. Set `CHROMIUM_PATH` to select an existing Chromium executable.
 
 Optional data preparation scripts live in `scripts/`. Python is not required to install or run the site. Contributions are welcome; include a clear description and, for visual changes, desktop and mobile screenshots.
 
