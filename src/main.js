@@ -57,7 +57,7 @@ function similarityRate(site) {
     if (!site.similarityRate) return null;
     const row = document.createElement("p");
     row.className = "earth-site-similarity";
-    row.textContent = `Data accuracy / similarity rate: ${site.similarityRate}`;
+    row.textContent = `Accuracy/Similarity Rate: ${site.similarityRate}`;
     return row;
 }
 
@@ -324,6 +324,7 @@ scene.attachLayer(({ group, camera, geographic, radius = 2.55, globe }) => {
             popoverPosition = null;
             sitePopover.style.left = "";
             sitePopover.style.top = "";
+            sitePopover.style.maxHeight = "";
             selectedSiteName = site.name;
             sitePreviewOpen = true;
             selectedPreviewCanvas = null;
@@ -603,30 +604,80 @@ scene.attachLayer(({ group, camera, geographic, radius = 2.55, globe }) => {
             connector.style.display = anchorHidden ? "none" : "";
             const overlayRect = overlay.getBoundingClientRect();
             const bounds = window.__mobileGlobe;
-            const minTop = bounds ? bounds.top : 24;
-            const maxBottom = bounds ? bounds.bottom : innerHeight - 110;
+            const minTop = bounds ? bounds.top - overlayRect.top : 24;
+            const maxBottom = bounds ? bounds.bottom - overlayRect.top : innerHeight - 110;
             if (anchorHidden) {
                 anchorX = overlayRect.width / 2;
                 anchorY = overlayRect.height / 2;
             }
             const width = sitePopover.offsetWidth;
-            const height = sitePopover.offsetHeight;
+            let height = sitePopover.offsetHeight;
             const gap = 20;
-            const leftSpace = anchorX - gap;
-            const rightSpace = overlayRect.width - anchorX - gap;
-            const placeRight =
-                rightSpace >= width || (leftSpace < width && rightSpace >= leftSpace);
-            const automaticLeft = Math.max(
-                16,
-                Math.min(
-                    placeRight ? anchorX + gap : anchorX - width - gap,
-                    overlayRect.width - width - 16,
-                ),
-            );
-            const automaticTop = Math.max(
+            const minLeft = 16;
+            const maxLeft = overlayRect.width - width - 16;
+            let maxTop = maxBottom - height;
+            let automaticTop = Math.max(
                 minTop,
-                Math.min(anchorY - height / 2, maxBottom - height),
+                Math.min(anchorY - height / 2, maxTop),
             );
+            let automaticLeft = Math.max(
+                minLeft,
+                Math.min(anchorX + gap, maxLeft),
+            );
+            const buttonRect = selectedMarker.button.getBoundingClientRect();
+            if (!selectedMarker.button.hidden && buttonRect.width && buttonRect.height) {
+                const markerLeft = buttonRect.left - overlayRect.left;
+                const markerTop = buttonRect.top - overlayRect.top;
+                const markerRight = buttonRect.right - overlayRect.left;
+                const markerBottom = buttonRect.bottom - overlayRect.top;
+                const sidePositions = [
+                    markerRight + gap,
+                    markerLeft - width - gap,
+                ].filter((left) => left >= minLeft && left <= maxLeft);
+
+                if (sidePositions.length) {
+                    automaticLeft = sidePositions.reduce((closest, left) =>
+                        Math.abs(left + width / 2 - anchorX) <
+                        Math.abs(closest + width / 2 - anchorX)
+                            ? left
+                            : closest,
+                    );
+                } else {
+                    const centeredLeft = Math.max(
+                        minLeft,
+                        Math.min((markerLeft + markerRight - width) / 2, maxLeft),
+                    );
+                    const verticalPositions = [
+                        markerTop - height - gap,
+                        markerBottom + gap,
+                    ].filter((top) => top >= minTop && top <= maxTop);
+                    if (verticalPositions.length) {
+                        automaticLeft = centeredLeft;
+                        automaticTop = verticalPositions.reduce((closest, top) =>
+                            Math.abs(top + height / 2 - anchorY) <
+                            Math.abs(closest + height / 2 - anchorY)
+                                ? top
+                                : closest,
+                        );
+                    } else {
+                        const verticalOptions = [
+                            { above: true, space: markerTop - gap - minTop },
+                            { above: false, space: maxBottom - markerBottom - gap },
+                        ].filter((option) => option.space > 0);
+                        if (verticalOptions.length) {
+                            const position = verticalOptions.reduce((largest, option) =>
+                                option.space > largest.space ? option : largest,
+                            );
+                            sitePopover.style.maxHeight = `${position.space}px`;
+                            height = sitePopover.offsetHeight;
+                            automaticLeft = centeredLeft;
+                            automaticTop = position.above
+                                ? markerTop - height - gap
+                                : markerBottom + gap;
+                        }
+                    }
+                }
+            }
             const left = popoverPosition?.left ?? automaticLeft;
             const top = popoverPosition?.top ?? automaticTop;
 

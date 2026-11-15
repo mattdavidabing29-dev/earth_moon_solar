@@ -5,6 +5,7 @@ import "./devs.css";
 
 const app = document.querySelector("#app");
 
+// First person in the list is the lead and sits at the top of the tree.
 const team = [
     { name: "Jacken James B. Bongao", role: "Lead Developer", initials: "JB" },
     { name: "Angelito Nicholas Jr.", role: "Data Analyst", initials: "AN" },
@@ -13,8 +14,10 @@ const team = [
     { name: "Oclarit", role: "Presenter", initials: "O" },
 ];
 
-const memberCard = ({ name, role, initials }) => `
-  <div class="devs-member">
+const [lead, ...members] = team;
+
+const memberCard = ({ name, role, initials }, extraClass = "") => `
+  <div class="devs-profile devs-member ${extraClass}">
     <div class="devs-profile-top"><span>${(role || "Role coming soon").toUpperCase()}</span><span class="devs-status"><i></i> JS DEVS</span></div>
     <div class="devs-monogram" aria-hidden="true">${initials}</div>
     <h2>${name}</h2>
@@ -29,15 +32,27 @@ app.innerHTML = `
     <div class="devs-content">
       <section class="devs-hero" aria-labelledby="devs-title">
         <div class="devs-intro">
-          
+
           <h1 id="devs-title">Built with curiosity.<br /><em>Made to explore.</em></h1>
           <p>Earth Explorer is an interactive project by the JS Devs team, bringing together planetary imagery and hands-on web graphics.</p>
 
         </div>
+      </section>
 
-        <aside class="devs-profile devs-team" aria-label="JS Devs team">
-          ${team.map(memberCard).join("")}
-        </aside>
+      <section class="devs-section" aria-labelledby="devs-team-title">
+        <div class="devs-section-heading">
+          <span class="eyebrow">THE TEAM</span>
+          <h2 id="devs-team-title">JS Devs.</h2>
+        </div>
+
+        <ul class="devs-tree" aria-label="JS Devs team">
+          <li class="devs-node devs-node-lead">
+            ${memberCard(lead, "devs-member-lead")}
+            <ul class="devs-branch">
+              ${members.map((member) => `<li class="devs-node">${memberCard(member)}</li>`).join("")}
+            </ul>
+          </li>
+        </ul>
       </section>
 
       <section class="devs-section" aria-labelledby="devs-build-title">
@@ -45,7 +60,7 @@ app.innerHTML = `
           <span class="eyebrow">A LITTLE ABOUT THE BUILD</span>
           <h2 id="devs-build-title">Science, code, and a view from space.</h2>
         </div>
-     
+
       </section>
 
       <section class="devs-footer-card" aria-label="Project links">
